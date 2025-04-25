@@ -16,7 +16,7 @@ from typing import Any
 
 import openai
 from exceptions import (
-    AggressionAnalysisError,
+    GroupMeScraperError,
     GroupSelectionError,
     ImageDownloadError,
     MessageFetchError,
@@ -81,7 +81,7 @@ def select_group(groups: list[dict[str, Any]]) -> dict[str, Any]:
 
 def fetch_all_messages(token: str, group_id: str) -> list[dict[str, Any]]:
     """Fetch messages from a group using pagination."""
-    messages = []
+    messages: list[str] = []
     before_id = None
 
     try:
@@ -100,16 +100,38 @@ def fetch_all_messages(token: str, group_id: str) -> list[dict[str, Any]]:
             messages.extend(batch)
             before_id = batch[-1]["id"]
     except Exception as e:
-        raise MessageFetchError(f"Failed to fetch messages: {e}")
+        raise MessageFetchError(f"Failed to fetch messages: {e}") from e
 
     return messages
 
 
 def is_aggressive(text: str) -> bool:
-    """Uses GPT to classify aggression."""
+    """
+    Uses GPT to determine if a message is aggressive, hostile, or toxic.
+
+    Returns:
+        True if aggressive, False otherwise.
+    """
     try:
-        # ... same prompt logic
-        ...
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            temperature=0.0,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a classifier. Your job is to determine if a message contains aggression, hostility, or toxicity. "
+                        "Only respond with 'Yes' or 'No'. Do not explain your answer."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": f'Does this message contain aggressive or hostile language?\n\nMessage: """{text}"""',
+                },
+            ],
+        )
+        answer = response["choices"][0]["message"]["content"].strip().lower()
+        return answer.startswith("yes")
     except Exception as e:
         raise OpenAIServiceError(f"OpenAI classification failed: {e}")
 
@@ -122,15 +144,6 @@ def find_aggressive_messages(messages: list[dict[str, Any]]) -> list[dict[str, A
         if text and is_aggressive(text):
             flagged.append(msg)
     return flagged
-
-
-def find_aggressive_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Return messages containing aggressive language."""
-    return [
-        msg
-        for msg in messages
-        if msg.get("text") and any(word in msg["text"].lower() for word in AGGRESSIVE_WORDS)
-    ]
 
 
 def download_images(
