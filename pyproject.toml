@@ -1,0 +1,54 @@
+[project]
+name = "groupme-api-app"
+version = "0.1.0"
+description = "access and report on a groupme account"
+authors = [
+    {name = "e402820",email = "elijah.guthrie@lmco.com"}
+]
+readme = "README.md"
+packages = [{include = "groupeme_api"}]
+requires-python = ">=3.10"
+dependencies = [
+    "openai (>=1.76.0,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.black]
+line_length = 100
+target_version = ["py310"]
+check = false
+
+[tool.isort]
+# https://pycqa.github.io/isort/docs/configuration/black_compatibility
+profile = "black"
+py_version = 310
+line_length = 100
+src_paths = ["groupeme_api"]
+virtual_env = ".venv"
+
+[tool.vulture]
+min_confidence = 80
+paths = ["groupeme_api"]
+sort_by_size = true
+
+[tool.flake8]
+ignore = ["E203"]
+max_line_length = 100
+
+[tool.mypy]
+no_implicit_optional = true
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+isort = "*"
+mypy = "*"
+pylint = "*"
+vulture = "*"
+
